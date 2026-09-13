@@ -143,6 +143,7 @@ dependency_overrides:
       path: ./libs/macos/media_kit_libs_macos_video
   libtorrent_flutter:
     path: packages/anymex_extension_bridge/packages/libtorrent_flutter
+  screen_brightness_ios: 2.1.2
 
 dev_dependencies:
   flutter_test:
