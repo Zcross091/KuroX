@@ -171,6 +171,24 @@ String formatDuration(Duration duration, {bool padHours = false}) {
 
 String formatTimeRemaining(int remainingMs) {
   if (remainingMs <= 0) return 'Watched';
-  final remainingMins = (remainingMs / 60000).ceil();
-  return '$remainingMins min left';
+  final totalMinutes = (remainingMs / 60000).ceil();
+  if (totalMinutes < 60) {
+    return '$totalMinutes min left';
+  }
+  final hours = totalMinutes ~/ 60;
+  final minutes = totalMinutes % 60;
+  if (minutes == 0) {
+    return '${hours}h left';
+  }
+  return '${hours}h ${minutes}m left';
 }
+
+String formatDurationMinutes(int? minutes) {
+  if (minutes == null || minutes <= 0) return '';
+  if (minutes < 60) return '$minutes min';
+  final hours = minutes ~/ 60;
+  final remainingMins = minutes % 60;
+  if (remainingMins == 0) return '${hours}h';
+  return '${hours}h ${remainingMins}m';
+}
+

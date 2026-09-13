@@ -39,6 +39,18 @@ class UserHomeLayoutNotifier extends Notifier<List<HomeSection>> {
     if (prefs.mode == MetadataMode.source || tracker == null) {
       return const [
         HomeSection(
+          id: '3',
+          title: 'Continue Watching',
+          type: HomeSectionType.continueMedia,
+          targetMediaType: MediaType.ANIME,
+        ),
+        HomeSection(
+          id: '4',
+          title: 'Continue Reading',
+          type: HomeSectionType.continueMedia,
+          targetMediaType: MediaType.MANGA,
+        ),
+        HomeSection(
           id: '1',
           title: 'Trending Anime',
           type: HomeSectionType.discovery,
@@ -52,22 +64,21 @@ class UserHomeLayoutNotifier extends Notifier<List<HomeSection>> {
           targetMediaType: MediaType.MANGA,
           trackerCategory: TrackerCategory.trending,
         ),
-        HomeSection(
-          id: '3',
-          title: 'Continue Watching',
-          type: HomeSectionType.continueMedia,
-          targetMediaType: MediaType.ANIME,
-        ),
-        HomeSection(
-          id: '4',
-          title: 'Continue Reading',
-          type: HomeSectionType.continueMedia,
-          targetMediaType: MediaType.MANGA,
-        ),
       ];
     } else {
       int idCounter = 1;
       final sections = <HomeSection>[];
+
+      for (final media in tracker.supportedMediaTypes) {
+        sections.add(HomeSection(
+          id: (idCounter++).toString(),
+          title: (media == MediaType.MANGA || media == MediaType.NOVEL)
+              ? 'Continue Reading'
+              : 'Continue Watching',
+          type: HomeSectionType.continueMedia,
+          targetMediaType: media,
+        ));
+      }
 
       for (final media in tracker.supportedMediaTypes) {
         if (tracker.supportedCategories.contains(TrackerCategory.trending)) {
@@ -79,17 +90,6 @@ class UserHomeLayoutNotifier extends Notifier<List<HomeSection>> {
             trackerCategory: TrackerCategory.trending,
           ));
         }
-      }
-
-      for (final media in tracker.supportedMediaTypes) {
-        sections.add(HomeSection(
-          id: (idCounter++).toString(),
-          title: (media == MediaType.MANGA || media == MediaType.NOVEL)
-              ? 'Continue Reading'
-              : 'Continue Watching',
-          type: HomeSectionType.continueMedia,
-          targetMediaType: media,
-        ));
       }
 
       return sections;

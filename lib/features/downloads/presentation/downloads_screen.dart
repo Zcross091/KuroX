@@ -10,6 +10,7 @@ import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/downloads/domain/models/download_task.dart';
 import 'package:shonenx/features/downloads/providers/download_prefs_provider.dart';
 import 'package:shonenx/features/downloads/providers/download_provider.dart';
+import 'package:shonenx/features/downloads/data/offline_progress_repository.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 
@@ -464,9 +465,13 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
     return items;
   }
 
-  void _openFile(File file) {
+  void _openFile(File file, {Duration? startPosition}) {
     final name = file.path.split('/').last.replaceAll('.mp4', '');
-    context.pushPlayer(PlayerModeOffline(filePath: file.path, title: name));
+    context.pushPlayer(PlayerModeOffline(
+      filePath: file.path,
+      title: name,
+      startPosition: startPosition,
+    ));
   }
 
   Future<void> _openExternal(File file) async {
@@ -650,6 +655,7 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
     ColorScheme colors,
   ) {
     final sizeStr = (item.sizeBytes / (1024 * 1024)).toStringAsFixed(1);
+    final offlineProgress = ref.watch(offlineProgressProvider(item.file.path));
 
     return InkWell(
       onTap: () => _openFile(item.file),
@@ -658,9 +664,13 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
         child: Row(
           children: [
             Icon(
-              Icons.play_circle_outline_rounded,
+              offlineProgress?.isCompleted == true
+                  ? Icons.check_circle_rounded
+                  : Icons.play_circle_outline_rounded,
               size: 24,
-              color: colors.primary,
+              color: offlineProgress?.isCompleted == true
+                  ? colors.secondary
+                  : colors.primary,
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -677,12 +687,56 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    '$sizeStr MB',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colors.onSurfaceVariant,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        '$sizeStr MB',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                      if (offlineProgress != null &&
+                          offlineProgress.progress > 0.02 &&
+                          !offlineProgress.isCompleted) ...[
+                        Text(
+                          ' • ',
+                          style: TextStyle(color: colors.onSurfaceVariant),
+                        ),
+                        Text(
+                          offlineProgress.remainingText ??
+                              '${(offlineProgress.progress * 100).toInt()}% watched',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colors.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ] else if (offlineProgress?.isCompleted == true) ...[
+                        Text(
+                          ' • Watched',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colors.secondary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
+                  if (offlineProgress != null &&
+                      offlineProgress.progress > 0.02 &&
+                      !offlineProgress.isCompleted) ...[
+                    const SizedBox(height: 5),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(2),
+                      child: SizedBox(
+                        height: 2.5,
+                        child: LinearProgressIndicator(
+                          value: offlineProgress.progress,
+                          backgroundColor: colors.surfaceContainerHighest,
+                          valueColor: AlwaysStoppedAnimation(colors.primary),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -694,42 +748,57 @@ class _DownloadedFilesTabState extends ConsumerState<_DownloadedFilesTab> {
               ),
               onSelected: (val) {
                 if (val == 'play') _openFile(item.file);
+                if (val == 'restart') {
+                  _openFile(item.file, startPosition: Duration.zero);
+                }
                 if (val == 'external') _openExternal(item.file);
                 if (val == 'delete') _confirmDeleteFile(context, item);
               },
               itemBuilder: (_) => [
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'play',
                   child: Row(
                     children: [
-                      Icon(Icons.play_arrow_rounded, size: 20),
-                      SizedBox(width: 12),
-                      Text('Play in KuroX'),
+                      const Icon(Icons.play_arrow_rounded, size: 20),
+                      const SizedBox(width: 12),
+                      Text(offlineProgress != null &&
+                              offlineProgress.progress > 0.02 &&
+                              !offlineProgress.isCompleted
+                          ? 'Resume'
+                          : 'Play in KuroX'),
                     ],
                   ),
                 ),
+                if (offlineProgress != null && offlineProgress.progress > 0.02)
+                  const PopupMenuItem(
+                    value: 'restart',
+                    child: Row(
+                      children: [
+                        Icon(Icons.replay_rounded, size: 20),
+                        SizedBox(width: 12),
+                        Text('Play from start'),
+                      ],
+                    ),
+                  ),
                 const PopupMenuItem(
                   value: 'external',
                   child: Row(
                     children: [
                       Icon(Icons.open_in_new_rounded, size: 20),
                       SizedBox(width: 12),
-                      Text('Play Externally'),
+                      Text('Open with...'),
                     ],
                   ),
                 ),
-                const PopupMenuDivider(),
-                PopupMenuItem(
+                const PopupMenuItem(
                   value: 'delete',
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.delete_outline_rounded,
-                        size: 20,
-                        color: colors.error,
-                      ),
+                      Icon(Icons.delete_outline_rounded,
+                          size: 20, color: Colors.redAccent),
                       const SizedBox(width: 12),
-                      Text('Delete', style: TextStyle(color: colors.error)),
+                      Text('Delete',
+                          style: TextStyle(color: Colors.redAccent)),
                     ],
                   ),
                 ),
