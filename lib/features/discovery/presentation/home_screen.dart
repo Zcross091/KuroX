@@ -19,18 +19,26 @@ import 'package:shonenx/shared/providers/theme_prefs_provider.dart';
 import 'package:shonenx/shared/providers/ui_prefs_provider.dart';
 import 'package:shonenx/shared/widgets/app_scaffold.dart';
 import 'package:shonenx/shared/widgets/tracker_avatar.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:shonenx/features/discovery/presentation/widgets/sheets/star_repo_sheet.dart';
 
 class _HeaderButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
   final String tooltip;
   final bool active;
+  final Color? iconColor;
+  final Color? backgroundColor;
 
   const _HeaderButton({
     required this.icon,
     required this.onTap,
+    this.onLongPress,
     required this.tooltip,
     this.active = false,
+    this.iconColor,
+    this.backgroundColor,
   });
 
   @override
@@ -39,12 +47,15 @@ class _HeaderButton extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: Material(
-        color: active
-            ? theme.colorScheme.primaryContainer
-            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        color: backgroundColor ??
+            (active
+                ? theme.colorScheme.primaryContainer
+                : theme.colorScheme.surfaceContainerHighest
+                    .withValues(alpha: 0.5)),
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           onTap: onTap,
+          onLongPress: onLongPress,
           borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.all(8),
@@ -59,9 +70,10 @@ class _HeaderButton extends StatelessWidget {
             child: Icon(
               icon,
               size: 20,
-              color: active
-                  ? theme.colorScheme.onPrimaryContainer
-                  : theme.colorScheme.onSurface,
+              color: iconColor ??
+                  (active
+                      ? theme.colorScheme.onPrimaryContainer
+                      : theme.colorScheme.onSurface),
             ),
           ),
         ),
@@ -230,6 +242,19 @@ class HomeScreen extends ConsumerWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            _HeaderButton(
+              tooltip: 'Star KuroX on GitHub',
+              icon: Icons.star_rounded,
+              iconColor: Colors.amber.shade400,
+              onTap: () => StarRepoSheet.show(context),
+              onLongPress: () async {
+                final url = Uri.parse('https://github.com/Zcross091/KuroX');
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(url, mode: LaunchMode.externalApplication);
+                }
+              },
+            ),
+            const SizedBox(width: 8),
             Consumer(
               builder: (context, modeRef, _) {
                 final mode = modeRef.watch(
