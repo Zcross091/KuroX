@@ -33,11 +33,30 @@ class UserHomeLayoutNotifier extends Notifier<List<HomeSection>> {
     final json = _storage.getStringList(key);
 
     if (json != null && json.isNotEmpty) {
-      return json.map((e) => HomeSection.fromJson(e)).toList();
+      final list = json.map((e) => HomeSection.fromJson(e)).toList();
+      final hasRec = list.any((s) => s.type == HomeSectionType.recommendation);
+      if (!hasRec) {
+        list.insert(
+          0,
+          const HomeSection(
+            id: 'rec_anime',
+            title: 'Recommended For You',
+            type: HomeSectionType.recommendation,
+            targetMediaType: MediaType.ANIME,
+          ),
+        );
+      }
+      return list;
     }
 
     if (prefs.mode == MetadataMode.source || tracker == null) {
       return const [
+        HomeSection(
+          id: 'rec_anime',
+          title: 'Recommended For You',
+          type: HomeSectionType.recommendation,
+          targetMediaType: MediaType.ANIME,
+        ),
         HomeSection(
           id: '1',
           title: 'Trending Anime',
@@ -68,6 +87,13 @@ class UserHomeLayoutNotifier extends Notifier<List<HomeSection>> {
     } else {
       int idCounter = 1;
       final sections = <HomeSection>[];
+
+      sections.add(const HomeSection(
+        id: 'rec_anime',
+        title: 'Recommended For You',
+        type: HomeSectionType.recommendation,
+        targetMediaType: MediaType.ANIME,
+      ));
 
       for (final media in tracker.supportedMediaTypes) {
         if (tracker.supportedCategories.contains(TrackerCategory.trending)) {
