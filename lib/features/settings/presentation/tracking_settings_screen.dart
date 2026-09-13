@@ -32,9 +32,9 @@ class _TrackingSettingsScreenState
     }
     switch (type) {
       case TrackerType.anilist:
-        return Env.ANILIST_CLIENT_ID.isNotEmpty;
+        return true; // Built-in public credentials bundled
       case TrackerType.myanimelist:
-        return Env.MAL_CLIENT_ID.isNotEmpty;
+        return true; // Built-in public credentials bundled
       case TrackerType.simkl:
         return Env.SIMKL_CLIENT_ID.isNotEmpty;
       default:

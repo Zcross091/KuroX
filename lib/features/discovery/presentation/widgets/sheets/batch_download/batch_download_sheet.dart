@@ -405,7 +405,10 @@ class BatchDownloadSheetState extends ConsumerState<BatchDownloadSheet> {
             ..savePath = '$targetDir/$fileName'
             ..fileName = fileName;
 
-          await ref.read(downloadManagerProvider.notifier).startDownload(task);
+          await ref.read(downloadManagerProvider.notifier).startDownload(
+            task,
+            subtitles: matchedStream.subtitles,
+          );
           queuedTaskIds.add(task.id);
         }
         successCount++;

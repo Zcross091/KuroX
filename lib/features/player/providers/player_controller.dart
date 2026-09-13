@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
 import 'package:screenshot/screenshot.dart';
 
 import 'package:collection/collection.dart';
@@ -251,7 +254,7 @@ class PlayerController extends Notifier<PlayerState> {
     }
   }
 
-  /// Loads a local file for offline playback (no servers, no quality picker).
+  /// Loads a local file for offline playback (auto-detects local subtitles).
   Future<void> _loadOfflineData(PlayerModeOffline mode) async {
     ref.read(videoEngineProvider).pause();
     state = state.copyWith(
@@ -269,28 +272,114 @@ class PlayerController extends Notifier<PlayerState> {
     );
 
     try {
+      final videoFile = File(mode.filePath);
+      final discoveredSubtitles = <SubtitleTrack>[];
+
+      try {
+        final parentDir = videoFile.parent;
+        if (await parentDir.exists()) {
+          final baseName = p.basenameWithoutExtension(videoFile.path).toLowerCase();
+          final entities = await parentDir.list().toList();
+
+          for (final entity in entities) {
+            if (entity is File) {
+              final ext = p.extension(entity.path).toLowerCase();
+              if (ext == '.vtt' || ext == '.srt' || ext == '.ass') {
+                final fileNameWithoutExt = p.basenameWithoutExtension(entity.path);
+                final fileNameLower = fileNameWithoutExt.toLowerCase();
+
+                // Check if this subtitle belongs to this episode
+                if (fileNameLower.startsWith(baseName)) {
+                  String lang = 'English';
+                  if (fileNameWithoutExt.length > baseName.length) {
+                    final suffix = fileNameWithoutExt
+                        .substring(baseName.length)
+                        .replaceAll(RegExp(r'^[._ -]+'), '')
+                        .trim();
+                    if (suffix.isNotEmpty) {
+                      lang = suffix;
+                    }
+                  }
+                  discoveredSubtitles.add(
+                    SubtitleTrack(url: entity.path, language: lang),
+                  );
+                }
+              }
+            }
+          }
+        }
+      } catch (_) {}
+
+      final playerPrefs = ref.read(playerPrefsProvider);
+      final prefLang = playerPrefs.defaultSubtitleLang.toLowerCase();
+
+      final defaultSub = discoveredSubtitles.isNotEmpty
+          ? (discoveredSubtitles.firstWhereOrNull(
+                (s) =>
+                    s.language.toLowerCase().contains(prefLang) ||
+                    s.language.toLowerCase().contains('eng'),
+              ) ??
+              discoveredSubtitles.first)
+          : SubtitleTrack.none;
+
       final localStream = VideoStream(
         url: mode.filePath,
         quality: 'Local',
-        subtitles: [],
+        subtitles: discoveredSubtitles,
       );
+
+      final allSubtitles = [SubtitleTrack.none, ...discoveredSubtitles];
 
       state = state.copyWith(
         streams: [localStream],
         activeStream: localStream,
         qualities: [localStream],
         activeQuality: localStream,
-        subtitles: [SubtitleTrack.none],
-        activeSubtitle: SubtitleTrack.none,
+        subtitles: allSubtitles,
+        activeSubtitle: defaultSub,
         isLoading: false,
       );
 
-      await ref
-          .read(videoEngineProvider)
-          .initialize(localStream, subtitle: null, startAt: Duration.zero);
+      await ref.read(videoEngineProvider).initialize(
+            localStream,
+            subtitle: defaultSub == SubtitleTrack.none ? null : defaultSub,
+            startAt: Duration.zero,
+          );
+
+      if (defaultSub != SubtitleTrack.none) {
+        _applyNativeSubtitle(defaultSub);
+      }
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
+  }
+
+  /// Allows picking an external subtitle file (.vtt, .srt, .ass) from device storage
+  Future<void> pickExternalSubtitle() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['vtt', 'srt', 'ass'],
+      );
+
+      if (result != null && result.files.single.path != null) {
+        final filePath = result.files.single.path!;
+        final name = p.basenameWithoutExtension(filePath);
+        final newTrack = SubtitleTrack(
+          url: filePath,
+          language: name.isNotEmpty ? name : 'Custom Subtitle',
+        );
+
+        final updatedList = [...state.subtitles, newTrack];
+        state = state.copyWith(
+          subtitles: updatedList,
+          activeSubtitle: newTrack,
+        );
+
+        await ref.read(videoEngineProvider).setSubtitle(newTrack);
+        _applyNativeSubtitle(newTrack);
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadData(

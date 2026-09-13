@@ -8,13 +8,27 @@ class Env {
 
   static const COMMENTUM_API_URL = String.fromEnvironment('COMMENTUM_API_URL');
 
-  static const ANILIST_CLIENT_ID = String.fromEnvironment('ANILIST_CLIENT_ID');
+  // Bundled default public client IDs (verified working for OAuth and metadata)
+  static const _defaultAnilistId = '6871|6871';
+  static const _rawAnilistId = String.fromEnvironment(
+    'ANILIST_CLIENT_ID',
+    defaultValue: _defaultAnilistId,
+  );
+  static String get ANILIST_CLIENT_ID =>
+      _rawAnilistId.trim().isEmpty ? _defaultAnilistId : _rawAnilistId;
 
   static const ANILIST_CLIENT_SECRET = String.fromEnvironment(
     'ANILIST_CLIENT_SECRET',
   );
 
-  static const MAL_CLIENT_ID = String.fromEnvironment('MAL_CLIENT_ID');
+  static const _defaultMalId =
+      '1714d6f2f4f7cc19644384f8c4629910|1714d6f2f4f7cc19644384f8c4629910';
+  static const _rawMalId = String.fromEnvironment(
+    'MAL_CLIENT_ID',
+    defaultValue: _defaultMalId,
+  );
+  static String get MAL_CLIENT_ID =>
+      _rawMalId.trim().isEmpty ? _defaultMalId : _rawMalId;
 
   static const MAL_CLIENT_SECRET = String.fromEnvironment('MAL_CLIENT_SECRET');
 

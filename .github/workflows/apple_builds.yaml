@@ -67,11 +67,15 @@ jobs:
 
       - name: Create Keys Environment
         run: |
+          ANILIST_ID="${{ secrets.ANILIST_CLIENT_ID }}"
+          ANILIST_ID="${ANILIST_ID:-6871|6871}"
+          MAL_ID="${{ secrets.MAL_CLIENT_ID }}"
+          MAL_ID="${MAL_ID:-1714d6f2f4f7cc19644384f8c4629910|1714d6f2f4f7cc19644384f8c4629910}"
           cat > keys.json <<EOF
           {
-            "ANILIST_CLIENT_ID": "${{ secrets.ANILIST_CLIENT_ID }}",
+            "ANILIST_CLIENT_ID": "${ANILIST_ID}",
             "ANILIST_CLIENT_SECRET": "${{ secrets.ANILIST_CLIENT_SECRET }}",
-            "MAL_CLIENT_ID": "${{ secrets.MAL_CLIENT_ID }}",
+            "MAL_CLIENT_ID": "${MAL_ID}",
             "MAL_CLIENT_SECRET": "${{ secrets.MAL_CLIENT_SECRET }}",
             "SIMKL_CLIENT_ID": "${{ secrets.SIMKL_CLIENT_ID }}",
             "SIMKL_CLIENT_SECRET": "${{ secrets.SIMKL_CLIENT_SECRET }}",
@@ -134,11 +138,15 @@ jobs:
 
       - name: Create Keys Environment
         run: |
+          ANILIST_ID="${{ secrets.ANILIST_CLIENT_ID }}"
+          ANILIST_ID="${ANILIST_ID:-6871|6871}"
+          MAL_ID="${{ secrets.MAL_CLIENT_ID }}"
+          MAL_ID="${MAL_ID:-1714d6f2f4f7cc19644384f8c4629910|1714d6f2f4f7cc19644384f8c4629910}"
           cat > keys.json <<EOF
           {
-            "ANILIST_CLIENT_ID": "${{ secrets.ANILIST_CLIENT_ID }}",
+            "ANILIST_CLIENT_ID": "${ANILIST_ID}",
             "ANILIST_CLIENT_SECRET": "${{ secrets.ANILIST_CLIENT_SECRET }}",
-            "MAL_CLIENT_ID": "${{ secrets.MAL_CLIENT_ID }}",
+            "MAL_CLIENT_ID": "${MAL_ID}",
             "MAL_CLIENT_SECRET": "${{ secrets.MAL_CLIENT_SECRET }}",
             "SIMKL_CLIENT_ID": "${{ secrets.SIMKL_CLIENT_ID }}",
             "SIMKL_CLIENT_SECRET": "${{ secrets.SIMKL_CLIENT_SECRET }}",

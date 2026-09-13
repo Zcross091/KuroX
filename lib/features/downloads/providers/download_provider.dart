@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
+import 'dart:developer' as dev;
+import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:shonenx/shared/providers/database_provider.dart';
 import 'package:shonenx/core/network/http_client.dart';
 import 'package:shonenx/core/utils/http_x.dart';
@@ -83,7 +85,15 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
     }
   }
 
-  Future<void> startDownload(DownloadTask task) async {
+  Future<void> startDownload(
+    DownloadTask task, {
+    List<SubtitleTrack>? subtitles,
+  }) async {
+    // If subtitle tracks are provided, download them alongside the episode
+    if (subtitles != null && subtitles.isNotEmpty) {
+      _downloadSubtitles(task.savePath, subtitles, task.headersMap);
+    }
+
     final prefs = await ref.read(downloadPrefsProvider.future);
 
     if (prefs.useOneDM) {
@@ -338,5 +348,73 @@ class DownloadManagerNotifier extends AsyncNotifier<DownloadManagerNotifier> {
       onProgress: onProgress,
       onStatus: onStatus,
     );
+  }
+
+  Future<void> _downloadSubtitles(
+    String savePath,
+    List<SubtitleTrack> subtitles,
+    Map<String, String>? headers,
+  ) async {
+    try {
+      final targetDir = p.dirname(savePath);
+      final baseName = p.basenameWithoutExtension(savePath);
+      final dir = Directory(targetDir);
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
+      }
+
+      final httpClient = ref.read(httpClientProvider);
+
+      for (final sub in subtitles) {
+        if (sub.url.isEmpty) continue;
+        try {
+          String ext = '.vtt';
+          try {
+            final parsedPath = Uri.parse(sub.url).path.toLowerCase();
+            if (parsedPath.endsWith('.srt')) {
+              ext = '.srt';
+            } else if (parsedPath.endsWith('.ass')) {
+              ext = '.ass';
+            }
+          } catch (_) {}
+
+          final langClean = sub.language
+              .replaceAll(RegExp(r'[\\/:*?"<>|]'), '_')
+              .trim();
+          final isEng = langClean.toLowerCase().contains('eng') ||
+              langClean.toLowerCase() == 'english';
+
+          // Standard default subtitle file name: Episode 1.vtt
+          final primaryFileName = '$baseName$ext';
+          final primaryFile = File('$targetDir/$primaryFileName');
+
+          // Language-tagged subtitle file name: Episode 1.English.vtt
+          final langFileName = '$baseName.$langClean$ext';
+          final langFile = File('$targetDir/$langFileName');
+
+          final response = await httpClient.get(sub.url, headers: headers);
+          if (response.statusCode >= 200 && response.statusCode < 300) {
+            final bytes = response.bodyBytes;
+            if (bytes.isNotEmpty) {
+              await langFile.writeAsBytes(bytes);
+              if (isEng || subtitles.length == 1) {
+                await primaryFile.writeAsBytes(bytes);
+              }
+              dev.log(
+                'Downloaded subtitle $langFileName (${bytes.length} bytes)',
+                name: 'DownloadManager',
+              );
+            }
+          }
+        } catch (e) {
+          dev.log(
+            'Failed to download subtitle ${sub.language}: $e',
+            name: 'DownloadManager',
+          );
+        }
+      }
+    } catch (e) {
+      dev.log('Error in _downloadSubtitles: $e', name: 'DownloadManager');
+    }
   }
 }

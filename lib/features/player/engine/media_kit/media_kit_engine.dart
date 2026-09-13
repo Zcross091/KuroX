@@ -296,8 +296,14 @@ class MediaKitEngine implements VideoEngine {
       await _player.setSubtitleTrack(SubtitleTrack.no());
     } else {
       _log.d('Setting subtitle: ${subtitle.url} (lang: ${subtitle.language})');
+      final raw = subtitle.url;
+      final uriStr = (raw.startsWith('http://') ||
+              raw.startsWith('https://') ||
+              raw.startsWith('file://'))
+          ? raw
+          : Uri.file(raw).toString();
       await _player.setSubtitleTrack(
-        SubtitleTrack.uri(subtitle.url, language: subtitle.language),
+        SubtitleTrack.uri(uriStr, language: subtitle.language),
       );
     }
   }

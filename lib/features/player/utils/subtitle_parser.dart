@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 
 class SubtitleCue {
@@ -20,6 +21,21 @@ class SubtitleParser {
     Map<String, String>? headers,
   }) async {
     try {
+      // Check if this is a local file path or file:// URI
+      final isNetwork = url.startsWith('http://') || url.startsWith('https://');
+      if (!isNetwork) {
+        String filePath = url;
+        if (url.startsWith('file://')) {
+          filePath = Uri.parse(url).toFilePath();
+        }
+        final file = File(filePath);
+        if (await file.exists()) {
+          final content = await file.readAsString();
+          return parseString(content);
+        }
+        return [];
+      }
+
       final response = await http.get(Uri.parse(url), headers: headers);
       if (response.statusCode == 200) {
         final content = utf8.decode(response.bodyBytes, allowMalformed: true);

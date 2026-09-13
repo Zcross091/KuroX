@@ -34,14 +34,18 @@ class MalAuthenticator implements Authenticator {
           ? Env.MAL_CLIENT_SECRET_LIST.last
           : Env.MAL_CLIENT_SECRET_LIST.first);
 
+  bool get _isCustom =>
+      customCredentials != null && customCredentials!.clientId.isNotEmpty;
+
   @override
   String get redirectUri => _isDesktop
       ? 'http://localhost:43824/success?code=1337'
-      : 'shonenx://callback';
+      : (_isCustom ? 'shonenx://callback' : 'mallogin://callback');
 
   @override
-  String get callbackScheme =>
-      _isDesktop ? 'http://localhost:43824' : 'shonenx';
+  String get callbackScheme => _isDesktop
+      ? 'http://localhost:43824'
+      : (_isCustom ? 'shonenx' : 'mallogin');
 
   @override
   String get providerName => TrackerType.myanimelist.name;
@@ -85,14 +89,21 @@ class MalAuthenticator implements Authenticator {
       await _secureStorage.write(key: _codeVerifierKey, value: codeVerifier);
       await _secureStorage.write(key: _authStateKey, value: state);
 
-      final authUri = Uri.https('myanimelist.net', '/v1/oauth2/authorize', {
+      final authParams = <String, String>{
         'response_type': 'code',
         'client_id': _clientId,
-        'redirect_uri': redirectUri,
         'code_challenge': codeVerifier, // PKCE plain method
         'code_challenge_method': 'plain',
         'state': state, // CSRF protection
-      });
+      };
+
+      // Only specify redirect_uri if custom credentials are used or on desktop.
+      // Default bundled MAL client ID expects no redirect_uri on mobile to avoid 401.
+      if (_isCustom || _isDesktop) {
+        authParams['redirect_uri'] = redirectUri;
+      }
+
+      final authUri = Uri.https('myanimelist.net', '/v1/oauth2/authorize', authParams);
 
       final result = await FlutterWebAuth2.authenticate(
         url: authUri.toString(),
@@ -100,7 +111,10 @@ class MalAuthenticator implements Authenticator {
         options: FlutterWebAuth2Options(useWebview: !_isDesktop),
       );
 
-      final parsedUrl = Uri.parse(result);
+      final sanitizedResult = result.contains('://')
+          ? result
+          : result.replaceFirst(':', '://');
+      final parsedUrl = Uri.parse(sanitizedResult);
       final returnedState = parsedUrl.queryParameters['state'];
       final code = parsedUrl.queryParameters['code'];
       final error = parsedUrl.queryParameters['error'];
@@ -108,7 +122,7 @@ class MalAuthenticator implements Authenticator {
 
       // Validate state parameter (CSRF protection)
       final storedState = await _secureStorage.read(key: _authStateKey);
-      if (returnedState != storedState) {
+      if (returnedState != null && storedState != null && returnedState != storedState) {
         await _cleanupSecureStorage();
         throw Exception(
           'MyAnimeList Auth Error: State mismatch. Potential CSRF attack.',
@@ -130,13 +144,16 @@ class MalAuthenticator implements Authenticator {
         );
       }
 
-      final bodyParams = {
+      final bodyParams = <String, dynamic>{
         'client_id': _clientId,
         'grant_type': 'authorization_code',
         'code': code,
         'code_verifier': codeVerifier,
-        'redirect_uri': redirectUri,
       };
+
+      if (_isCustom || _isDesktop) {
+        bodyParams['redirect_uri'] = redirectUri;
+      }
 
       if (_clientSecret.isNotEmpty) {
         bodyParams['client_secret'] = _clientSecret;

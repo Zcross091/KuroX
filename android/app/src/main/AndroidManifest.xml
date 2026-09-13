@@ -130,6 +130,9 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="shonenx" />
                 <data android:scheme="kurox" />
+                <data android:scheme="anilistlogin" />
+                <data android:scheme="mallogin" />
+                <data android:scheme="simkl" />
             </intent-filter>
         </activity>
 

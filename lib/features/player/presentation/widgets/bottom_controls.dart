@@ -423,6 +423,18 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
             },
             actions: [
               IconButton.filledTonal(
+                tooltip: 'Add Subtitle File',
+                style: IconButton.styleFrom(
+                  backgroundColor: widget.theme.colorScheme.secondaryContainer,
+                  foregroundColor: widget.theme.colorScheme.onSecondaryContainer,
+                ),
+                icon: const Icon(Icons.file_open_rounded, size: 18),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  widget.controller.pickExternalSubtitle();
+                },
+              ),
+              IconButton.filledTonal(
                 tooltip: 'Customize Subtitles',
                 style: IconButton.styleFrom(
                   backgroundColor: widget.theme.colorScheme.primary,

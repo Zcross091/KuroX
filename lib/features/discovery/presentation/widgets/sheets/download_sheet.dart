@@ -415,7 +415,10 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
       ..savePath = '$targetDir/$fileName'
       ..fileName = fileName;
 
-    await ref.read(downloadManagerProvider.notifier).startDownload(task);
+    await ref.read(downloadManagerProvider.notifier).startDownload(
+      task,
+      subtitles: stream.subtitles,
+    );
 
     if (mounted) {
       ScaffoldMessenger.of(

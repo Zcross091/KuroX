@@ -28,14 +28,20 @@ class AnilistAuthenticator implements Authenticator {
           ? Env.ANILIST_CLIENT_SECRET_LIST.last
           : Env.ANILIST_CLIENT_SECRET_LIST.first);
 
+  bool get _isCustom =>
+      customCredentials != null && customCredentials!.clientId.isNotEmpty;
+
+  bool get _hasSecret => _clientSecret.trim().isNotEmpty;
+
   @override
   String get redirectUri => _isDesktop
       ? 'http://localhost:43824/success?code=1337'
-      : 'shonenx://callback';
+      : (_isCustom ? 'shonenx://callback' : 'anilistlogin://callback');
 
   @override
-  String get callbackScheme =>
-      _isDesktop ? 'http://localhost:43824' : 'shonenx';
+  String get callbackScheme => _isDesktop
+      ? 'http://localhost:43824'
+      : (_isCustom ? 'shonenx' : 'anilistlogin');
 
   @override
   String get providerName => TrackerType.anilist.name;
@@ -45,11 +51,15 @@ class AnilistAuthenticator implements Authenticator {
 
   @override
   Future<String> performLogin() async {
-    final url = Uri.https('anilist.co', '/api/v2/oauth/authorize', {
+    final useImplicitGrant = !_hasSecret;
+
+    final authParams = <String, String>{
       'client_id': _clientId,
+      'response_type': useImplicitGrant ? 'token' : 'code',
       'redirect_uri': redirectUri,
-      'response_type': 'code',
-    });
+    };
+
+    final url = Uri.https('anilist.co', '/api/v2/oauth/authorize', authParams);
 
     final result = await FlutterWebAuth2.authenticate(
       url: url.toString(),
@@ -57,10 +67,24 @@ class AnilistAuthenticator implements Authenticator {
       options: FlutterWebAuth2Options(useWebview: !_isDesktop),
     );
 
-    final code = Uri.parse(result).queryParameters['code'];
+    final uri = Uri.parse(result);
 
+    // Implicit grant returns '#access_token=...' in URL fragment
+    String? accessToken;
+    if (uri.fragment.isNotEmpty) {
+      final fragmentParams = Uri.splitQueryString(uri.fragment);
+      accessToken = fragmentParams['access_token'];
+    }
+    accessToken ??= uri.queryParameters['access_token'];
+
+    if (accessToken != null && accessToken.isNotEmpty) {
+      return accessToken;
+    }
+
+    // If authorization code grant flow with secret
+    final code = uri.queryParameters['code'];
     if (code == null || code.isEmpty) {
-      throw Exception('AniList Auth Error: Failed to get authorization code.');
+      throw Exception('AniList Auth Error: Failed to obtain access token or code.');
     }
 
     final tokenResponse = await _http.post(
@@ -78,12 +102,15 @@ class AnilistAuthenticator implements Authenticator {
       },
     );
 
-    final String? accessToken = tokenResponse.json['access_token'];
+    final String? exchangedToken = tokenResponse.json?['access_token'];
 
-    if (accessToken == null || accessToken.isEmpty) {
-      throw Exception('AniList Auth Error: Failed to exchange token.');
+    if (exchangedToken == null || exchangedToken.isEmpty) {
+      final err = tokenResponse.json?['message'] ??
+          tokenResponse.json?['error'] ??
+          tokenResponse.body;
+      throw Exception('AniList Auth Error: Failed to exchange token ($err).');
     }
 
-    return accessToken;
+    return exchangedToken;
   }
 }

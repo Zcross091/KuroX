@@ -60,5 +60,22 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.kurox.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>kurox</string>
+				<string>shonenx</string>
+				<string>anilistlogin</string>
+				<string>mallogin</string>
+				<string>simkl</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

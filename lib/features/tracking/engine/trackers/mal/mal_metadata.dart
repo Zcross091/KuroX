@@ -25,9 +25,15 @@ mixin MalMetadata on BaseTracker implements RemoteTracker {
   TrackerCredentials? get customCredentials => null;
 
   static const String _baseUrl = 'https://api.myanimelist.net/v2';
-  static String get defaultClientId => Platform.isWindows || Platform.isLinux
-      ? Env.MAL_CLIENT_ID_LIST.last
-      : Env.MAL_CLIENT_ID_LIST.first;
+  static String get defaultClientId {
+    final list = Env.MAL_CLIENT_ID_LIST;
+    final id = Platform.isWindows || Platform.isLinux
+        ? (list.isNotEmpty ? list.last : '')
+        : (list.isNotEmpty ? list.first : '');
+    return id.trim().isNotEmpty
+        ? id.trim()
+        : '1714d6f2f4f7cc19644384f8c4629910';
+  }
 
   String get clientId => customCredentials?.clientId ?? defaultClientId;
 
