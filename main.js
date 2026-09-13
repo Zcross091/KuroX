@@ -4,57 +4,69 @@
  */
 
 const GITHUB_REPO = 'Zcross091/KuroX';
-const FALLBACK_VERSION = 'v2.1.7';
+const FALLBACK_VERSION = 'v2.1.12';
 
 // Direct GitHub release asset mappings
 const RELEASE_ASSETS = {
   'android-universal': {
-    name: 'KuroX-v2.1.7-android-universal.apk',
+    name: 'KuroX-v2.1.12-android-universal.apk',
     os: 'Android (Universal & TV)',
     size: '85.4 MB',
     desc: 'Compatible with all Android phones, tablets, TV sticks, and Android TV.'
   },
   'android-arm64': {
-    name: 'KuroX-v2.1.7-android-arm64-v8a.apk',
+    name: 'KuroX-v2.1.12-android-arm64-v8a.apk',
     os: 'Android (64-bit Phones)',
     size: '33.7 MB',
     desc: 'Optimized high-speed build for modern Android smartphones.'
   },
   'android-armv7': {
-    name: 'KuroX-v2.1.7-android-armeabi-v7a.apk',
+    name: 'KuroX-v2.1.12-android-armeabi-v7a.apk',
     os: 'Android (32-bit Legacy)',
     size: '32.8 MB',
     desc: 'For older 32-bit smartphones and legacy tablets.'
   },
   'android-x86': {
-    name: 'KuroX-v2.1.7-android-x86_64.apk',
+    name: 'KuroX-v2.1.12-android-x86_64.apk',
     os: 'Android (x86_64)',
     size: '35.3 MB',
     desc: 'For Chromebooks, Android x86 PCs, and desktop emulators.'
   },
   'windows-setup': {
-    name: 'KuroX-v2.1.7-windows-setup.exe',
+    name: 'KuroX-v2.1.12-windows-setup.exe',
     os: 'Windows (Setup Installer)',
     size: '35.9 MB',
     desc: 'Recommended. Full installer with start menu, desktop shortcut & Discord RPC.'
   },
   'windows-portable': {
-    name: 'KuroX-v2.1.7-windows-portable.zip',
+    name: 'KuroX-v2.1.12-windows-portable.zip',
     os: 'Windows (Portable ZIP)',
     size: '46.0 MB',
     desc: 'Standalone executable. Extract and run without installation.'
   },
   'linux-tar': {
-    name: 'KuroX-v2.1.7-linux-x86_64.tar.gz',
+    name: 'KuroX-v2.1.12-linux-x86_64.tar.gz',
     os: 'Linux (tar.gz)',
     size: '93.4 MB',
     desc: 'Universal Linux standalone package for Arch, Ubuntu, Fedora, Debian.'
   },
   'linux-zip': {
-    name: 'KuroX-v2.1.7-linux-x86_64.zip',
+    name: 'KuroX-v2.1.12-linux-x86_64.zip',
     os: 'Linux (zip)',
     size: '93.4 MB',
     desc: 'Standard compressed standalone zip bundle for Linux desktops.'
+  },
+  'macos-zip': {
+    name: 'KuroX-v2.1.12-macos-universal.zip',
+    os: 'macOS (Universal)',
+    size: '67.0 MB',
+    desc: 'Universal macOS package for Apple Silicon and Intel Macs.'
+  },
+  'ios-ipa': {
+    name: 'KuroX-v2.1.12-ios-unsigned.ipa',
+    os: 'iOS (Sideload IPA)',
+    size: '36.0 MB',
+    desc: 'Lightweight IPA for iPhone and iPad via AltStore, Sideloadly, or TrollStore.'
   }
 };
 
@@ -134,7 +146,16 @@ function initOsDetection() {
   let detectedOs = 'android'; // default
   let osName = 'Android';
 
-  if (userAgent.indexOf('win') !== -1) {
+  const isIOS = /iphone|ipad|ipod/.test(userAgent) || 
+    (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
+
+  if (isIOS) {
+    detectedOs = 'ios';
+    osName = 'iOS / iPadOS';
+  } else if (/macintosh|mac os x/.test(userAgent)) {
+    detectedOs = 'macos';
+    osName = 'macOS';
+  } else if (userAgent.indexOf('win') !== -1) {
     detectedOs = 'windows';
     osName = 'Windows';
   } else if (userAgent.indexOf('linux') !== -1 && userAgent.indexOf('android') === -1) {
@@ -189,17 +210,20 @@ function triggerDirectDownload(assetKey) {
   const asset = RELEASE_ASSETS[assetKey];
   if (!asset) return;
 
+  // Substitute current release tag dynamically if tag was updated from GitHub API
+  const fileName = asset.name.replace(/v\d+\.\d+\.\d+(-[a-zA-Z0-9]+)?/g, currentTag);
+
   // Compute direct release URL
   // Format: https://github.com/{owner}/{repo}/releases/download/{tag}/{filename}
-  const directUrl = `https://github.com/${GITHUB_REPO}/releases/download/${currentTag}/${asset.name}`;
+  const directUrl = `https://github.com/${GITHUB_REPO}/releases/download/${currentTag}/${fileName}`;
 
   // 1. Show Toast Feedback
-  showDownloadToast(asset.name, asset.size, asset.os);
+  showDownloadToast(fileName, asset.size, asset.os);
 
   // 2. Trigger instant silent download
   const link = document.createElement('a');
   link.href = directUrl;
-  link.setAttribute('download', asset.name);
+  link.setAttribute('download', fileName);
   link.setAttribute('rel', 'noopener noreferrer');
   link.style.display = 'none';
   document.body.appendChild(link);

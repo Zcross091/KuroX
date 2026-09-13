@@ -60,8 +60,11 @@ KuroX provides dedicated native builds for each ecosystem:
   - `Setup.exe`: Inno Setup installer with automatic Start Menu shortcuts.
   - `Portable.zip`: Zero-installation standalone folder.
 - **🐧 Linux**:
-  - `AppImage`: Universal one-click executable across Ubuntu, Fedora, Arch, and Debian.
-  - `.tar.gz`: Portable Linux release bundle.
+  - `.tar.gz` & `.zip`: Universal Linux release bundle.
+- **🍏 macOS**:
+  - `Universal.zip`: Universal binary for Apple Silicon (M1/M2/M3/M4) and Intel Macs with native window controls and Discord RPC.
+- **📱 iOS & iPadOS**:
+  - `Unsigned.ipa`: Lightweight IPA (~36 MB) for sideloading via AltStore, Sideloadly, TrollStore, Scarlet, or Feather.
 
 Check out all available downloads on the **[GitHub Releases Page](https://github.com/Zcross091/KuroX/releases)**.
 
@@ -77,7 +80,7 @@ Check out all available downloads on the **[GitHub Releases Page](https://github
 - 🔒 **App Lock Security**: Built-in biometric and PIN protection for private watchlists, library items, and read history.
 - 📊 **Multi-Tracker Sync**: Real-time progress synchronization with **AniList**, **MyAnimeList**, and **Simkl**.
 - 📥 **Offline Downloads**: Download full episodes and manga chapters for offline viewing anytime.
-- 🖥️ **Cross-Platform**: Tailored experiences across Android (Mobile & TV), Windows (Installer & Portable), and Linux.
+- 🖥️ **Cross-Platform**: Tailored experiences across Android (Mobile & TV), Windows (Installer & Portable), Linux, macOS, and iOS.
 
 ---
 
@@ -96,6 +99,12 @@ Download the latest `.apk` from **[GitHub Releases](https://github.com/Zcross091
 
 ### 🐧 Linux
 - **`KuroX-...-linux-x86_64.tar.gz`**: Standalone Linux bundle.
+
+### 🍏 macOS
+- **`KuroX-...-macos-universal.zip`**: Universal bundle for Apple Silicon (M-series) & Intel Macs. Unzip and drag `KuroX.app` to `/Applications`. Run `xattr -cr /Applications/KuroX.app` if macOS displays an open-source Gatekeeper prompt.
+
+### 📱 iOS & iPadOS
+- **`KuroX-...-ios-unsigned.ipa`**: Stripped lightweight IPA for sideloading via **AltStore**, **Sideloadly**, **TrollStore**, **Scarlet**, or **Feather**.
 
 ---
 
