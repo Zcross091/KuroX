@@ -1,7 +1,7 @@
 {
   "name": "KuroX Community Trackers Registry",
   "version": "1.0.0",
-  "lastUpdated": "2026-11-06T13:41:10.639Z",
+  "lastUpdated": "2026-11-07T12:22:22.684Z",
   "defaultPrimary": "anilist",
   "fallbackOrder": [
     "anilist",
