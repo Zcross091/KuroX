@@ -60,14 +60,33 @@ class AnilistAuthenticator implements Authenticator {
 
     final url = Uri.https('anilist.co', '/api/v2/oauth/authorize', authParams);
 
-    final result = await FlutterWebAuth2.authenticate(
-      url: url.toString(),
-      callbackUrlScheme: callbackScheme,
-      options: const FlutterWebAuth2Options(
-        preferEphemeral: false,
-        useWebview: true,
-      ),
-    );
+    String result;
+    try {
+      result = await FlutterWebAuth2.authenticate(
+        url: url.toString(),
+        callbackUrlScheme: callbackScheme,
+        options: const FlutterWebAuth2Options(
+          preferEphemeral: false,
+          useWebview: false,
+        ),
+      );
+    } catch (e) {
+      // If Custom Tabs fails to launch (e.g. no compatible browser found), fallback to in-app WebView
+      if (e.toString().contains('no browser') ||
+          e.toString().contains('ActivityNotFoundException') ||
+          e.toString().contains('Failed to open URL')) {
+        result = await FlutterWebAuth2.authenticate(
+          url: url.toString(),
+          callbackUrlScheme: callbackScheme,
+          options: const FlutterWebAuth2Options(
+            preferEphemeral: false,
+            useWebview: true,
+          ),
+        );
+      } else {
+        rethrow;
+      }
+    }
 
     final sanitizedResult = result.contains('://')
         ? result

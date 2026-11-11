@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:shonenx/features/auth/providers/auth_provider.dart';
 import 'package:shonenx/features/settings/presentation/widgets/settings_ui_components.dart';
 import 'package:shonenx/features/tracking/domain/models/tracker_type.dart';
@@ -50,6 +51,11 @@ class _TrackingSettingsScreenState
             content: Text('Login failed for ${tracker.type.displayName}: $e'),
             backgroundColor: Theme.of(context).colorScheme.error,
             behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: 'Token Login',
+              textColor: Theme.of(context).colorScheme.onError,
+              onPressed: () => _showCredentialsDialog(tracker.type),
+            ),
           ),
         );
       }
@@ -161,58 +167,79 @@ class _TrackingSettingsScreenState
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'If the OAuth browser does not redirect on your device, paste an Access Token directly below.',
+                  'If the browser redirect does not return to KuroX, authorize in your browser and paste the resulting token or URL below.',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 if (type == TrackerType.anilist) ...[
-                  const SizedBox(height: 8),
-                  InkWell(
-                    onTap: () {
-                      Clipboard.setData(const ClipboardData(
-                        text:
-                            'https://anilist.co/api/v2/oauth/authorize?client_id=20815&response_type=token',
-                      ));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content:
-                              Text('AniList token URL copied to clipboard!'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.copy_rounded,
-                            size: 16,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              'Copy AniList Token Generation URL',
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.primary,
-                                fontSize: 12,
-                                decoration: TextDecoration.underline,
-                              ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
                             ),
                           ),
-                        ],
+                          onPressed: () async {
+                            final uri = Uri.parse(
+                              'https://anilist.co/api/v2/oauth/authorize?client_id=20815&response_type=token',
+                            );
+                            if (await canLaunchUrl(uri)) {
+                              await launchUrl(
+                                uri,
+                                mode: LaunchMode.externalApplication,
+                              );
+                            }
+                          },
+                          icon: const Icon(Icons.open_in_browser, size: 16),
+                          label: const Text(
+                            'Open Auth in Browser',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      IconButton.outlined(
+                        icon: const Icon(Icons.copy_rounded, size: 16),
+                        tooltip: 'Copy Auth URL',
+                        onPressed: () {
+                          Clipboard.setData(const ClipboardData(
+                            text:
+                                'https://anilist.co/api/v2/oauth/authorize?client_id=20815&response_type=token',
+                          ));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                  'AniList token URL copied to clipboard!'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ],
                 const SizedBox(height: 12),
                 TextField(
                   controller: tokenController,
-                  decoration: const InputDecoration(
-                    labelText: 'Access Token',
-                    hintText: 'Paste OAuth Bearer Token',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: 'Access Token or Redirect URL',
+                    hintText: 'Paste token or full redirect URL',
+                    border: const OutlineInputBorder(),
                     isDense: true,
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.paste_rounded, size: 20),
+                      tooltip: 'Paste from clipboard',
+                      onPressed: () async {
+                        final data = await Clipboard.getData('text/plain');
+                        if (data?.text != null && data!.text!.isNotEmpty) {
+                          tokenController.text = data.text!;
+                        }
+                      },
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),

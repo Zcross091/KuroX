@@ -42,8 +42,28 @@ class AuthTokensNotifier extends AsyncNotifier<Map<TrackerType, String>> {
 
   Map<TrackerType, String> _current() => state.value ?? const {};
 
+  String _sanitizeToken(String rawToken) {
+    String cleanToken = rawToken.trim();
+    if (cleanToken.isEmpty) return '';
+
+    // Strip Bearer prefix if present
+    cleanToken = cleanToken
+        .replaceFirst(RegExp(r'^Bearer\s+', caseSensitive: false), '')
+        .trim();
+
+    // Extract access_token or token parameter if a URL, query, or fragment was provided
+    final tokenMatch =
+        RegExp(r'(?:access_token|token)=([^&/#\s]+)').firstMatch(cleanToken);
+    if (tokenMatch != null && tokenMatch.group(1) != null) {
+      cleanToken = tokenMatch.group(1)!;
+    }
+
+    return cleanToken;
+  }
+
   Future<void> login(RemoteTracker tracker) async {
-    final token = await tracker.authenticator.performLogin();
+    final rawToken = await tracker.authenticator.performLogin();
+    final token = _sanitizeToken(rawToken);
     if (token.isEmpty) {
       throw Exception('Failed to get token from ${tracker.type.displayName}');
     }
@@ -61,7 +81,7 @@ class AuthTokensNotifier extends AsyncNotifier<Map<TrackerType, String>> {
   }
 
   Future<void> setToken(RemoteTracker tracker, String token) async {
-    final cleanToken = token.trim();
+    final cleanToken = _sanitizeToken(token);
     if (cleanToken.isEmpty) {
       throw Exception('Token cannot be empty');
     }
