@@ -21,9 +21,41 @@
 
 **KuroX** is a high-performance, open-source anime streaming and manga reading client built with Flutter. Engineered for speed, privacy, and visual elegance, KuroX delivers instant out-of-the-box playback, deep multi-tracker synchronization, and an extensible source architecture.
 
-[✨ Features](#-key-features) • [📊 Live Stats](#-live-community--download-stats) • [📥 Downloads](#-downloads--installation) • [⚙️ Extensions](#-extensions--sources) • [👥 Contributors](#-contributors) • [⚖️ Legal](#-legal--dmca-disclaimer)
+[✨ Features](#-key-features) • [📸 Screenshots](#-screenshots) • [📊 Live Stats](#-live-community--download-stats) • [📥 Downloads](#-downloads--installation) • [⚙️ Extensions](#-extensions--sources) • [👥 Contributors](#-contributors) • [⚖️ Legal](#-legal--dmca-disclaimer)
 
 </div>
+
+---
+
+## 📸 Screenshots
+
+<div align="center">
+
+<!-- Auto-playing slideshow (animated GIF, cycles through all screens) -->
+<img src="assets/screenshots/slideshow.gif" alt="KuroX App Slideshow" width="300"/>
+
+<br/>
+<sub>Home → Discover → Library → Downloads → Tracking & Sync</sub>
+
+</div>
+
+<details>
+<summary><b>🖼️ View all screenshots (swipe / scroll gallery)</b></summary>
+<br/>
+
+<div style="overflow-x: auto; white-space: nowrap;">
+<table>
+  <tr>
+    <td align="center"><img src="assets/screenshots/home.png" width="220" alt="Home"/><br/><sub><b>Home</b></sub></td>
+    <td align="center"><img src="assets/screenshots/discover.png" width="220" alt="Discover"/><br/><sub><b>Discover</b></sub></td>
+    <td align="center"><img src="assets/screenshots/library.png" width="220" alt="Library"/><br/><sub><b>Library</b></sub></td>
+    <td align="center"><img src="assets/screenshots/downloads.png" width="220" alt="Downloads"/><br/><sub><b>Downloads</b></sub></td>
+    <td align="center"><img src="assets/screenshots/tracking.png" width="220" alt="Tracking & Sync"/><br/><sub><b>Tracking &amp; Sync</b></sub></td>
+  </tr>
+</table>
+</div>
+
+</details>
 
 ---
 
