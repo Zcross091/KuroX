@@ -88,6 +88,11 @@ class ProgressTracker {
     _userHasSeeked = false;
   }
 
+  /// Forces saving current watch progress to persistence immediately.
+  Future<void> flushProgress({bool skipCapture = true}) async {
+    await _saveCurrentProgress(skipCapture: skipCapture);
+  }
+
   // Captures one final thumbnail and updates history before player closes.
   Future<void> captureExitThumbnail({
     required UnifiedMedia? media,

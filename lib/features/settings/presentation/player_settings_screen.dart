@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shonenx/core/utils/stream_cleaner.dart';
 import 'package:shonenx/features/player/domain/aniskip_prefs.dart';
 import 'package:shonenx/features/player/presentation/widgets/media_kit/media_kit_settings.dart';
 import 'package:shonenx/features/player/providers/aniskip_prefs_provider.dart';
@@ -136,10 +137,14 @@ class PlayerSettingsScreen extends ConsumerWidget {
                       title: 'Custom Video Quality',
                       hint: 'e.g. 4K, 2160p, 1440p, 1080p',
                       initialValue: playerPrefs.defaultQuality,
-                      onSubmitted: (q) => prefsNotifier.setDefaultQuality(q),
+                      onSubmitted: (q) => prefsNotifier.setDefaultQuality(
+                        StreamCleaner.sanitizeDefaultQuality(q),
+                      ),
                     );
                   } else if (val != null) {
-                    prefsNotifier.setDefaultQuality(val);
+                    prefsNotifier.setDefaultQuality(
+                      StreamCleaner.sanitizeDefaultQuality(val),
+                    );
                   }
                 },
               ),

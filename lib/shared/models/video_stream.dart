@@ -1,10 +1,11 @@
+import 'package:shonenx/core/utils/stream_cleaner.dart';
+
 class VideoStream {
   final String url;
   final Map<String, String>? headers;
   final String quality;
   final List<SubtitleTrack> subtitles;
   final String? size;
-
   final bool requiresProxy;
 
   const VideoStream({
@@ -15,6 +16,23 @@ class VideoStream {
     this.size,
     this.requiresProxy = false,
   });
+
+  /// Clean, concise resolution string (e.g. '4K', '1080p', 'Auto').
+  String get resolution => StreamCleaner.extractResolution(quality);
+
+  /// Clean, human-readable display label for stream / server selection.
+  /// E.g. 'FSL Server • 4K (13.13 GB)'
+  String get displayTitle =>
+      StreamCleaner.cleanStreamTitle(quality, explicitSize: size);
+
+  /// Clean, human-readable display label for quality selection.
+  /// E.g. '4K (13.13 GB) • FSL Server'
+  String get displayQuality =>
+      StreamCleaner.cleanQualityLabel(quality, explicitSize: size);
+
+  /// Clean display title with optional explicit/cached size.
+  String displayTitleWithSize(String? s) =>
+      StreamCleaner.cleanStreamTitle(quality, explicitSize: s ?? size);
 
   VideoStream copyWith({
     String? url,
@@ -38,10 +56,31 @@ class VideoStream {
 class SubtitleTrack {
   final String url;
   final String language;
+  final String? label;
 
-  const SubtitleTrack({required this.url, required this.language});
+  const SubtitleTrack({required this.url, required this.language, this.label});
 
   static const none = SubtitleTrack(url: '', language: 'Off');
+
+  SubtitleTrack copyWith({String? url, String? language, String? label}) {
+    return SubtitleTrack(
+      url: url ?? this.url,
+      language: language ?? this.language,
+      label: label ?? this.label,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SubtitleTrack &&
+          runtimeType == other.runtimeType &&
+          url == other.url &&
+          language == other.language &&
+          label == other.label;
+
+  @override
+  int get hashCode => url.hashCode ^ language.hashCode ^ label.hashCode;
 }
 
 class AudioTrack {

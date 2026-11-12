@@ -313,6 +313,8 @@ class MediaKitEngine implements VideoEngine {
           controller: _controller,
           controls: NoVideoControls,
           fit: fit,
+          pauseUponEnteringBackgroundMode: false,
+          resumeUponEnteringForegroundMode: false,
           subtitleViewConfiguration: SubtitleViewConfiguration(
             padding: EdgeInsets.only(bottom: subtitlePrefs.bottomPadding),
             style: getSubtitleStrokeStyleInShadowForm(

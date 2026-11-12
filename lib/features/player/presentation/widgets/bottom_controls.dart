@@ -615,11 +615,11 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
             context: context,
             value: widget.playerState.activeStream,
             items: widget.playerState.streams,
-            itemLabel: (s) => s.quality,
+            itemLabel: (s) => s.displayTitle,
             onChanged: (v) {
               widget.controller.changeStream(v);
             },
-            displayText: widget.playerState.activeStream?.quality ?? 'Auto',
+            displayText: widget.playerState.activeStream?.displayTitle ?? 'Auto',
           ),
         ],
 

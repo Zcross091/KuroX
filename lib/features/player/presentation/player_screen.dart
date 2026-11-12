@@ -39,7 +39,8 @@ class PlayerScreen extends ConsumerStatefulWidget {
   ConsumerState<PlayerScreen> createState() => _PlayerScreenState();
 }
 
-class _PlayerScreenState extends ConsumerState<PlayerScreen> {
+class _PlayerScreenState extends ConsumerState<PlayerScreen>
+    with WidgetsBindingObserver {
   final ScreenshotController _screenshotController = ScreenshotController();
 
   bool _showControls = false;
@@ -76,6 +77,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     try {
       WakelockPlus.enable();
     } catch (_) {}
@@ -114,6 +116,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     try {
       WakelockPlus.disable();
     } catch (_) {}
@@ -135,6 +138,23 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     } catch (_) {}
 
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    switch (state) {
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.paused:
+        ref.read(playerControllerProvider.notifier).onAppBackgrounded();
+        break;
+      case AppLifecycleState.resumed:
+        ref.read(playerControllerProvider.notifier).onAppForegrounded();
+        break;
+      case AppLifecycleState.detached:
+        break;
+    }
   }
 
   void _disposeSystemUI() {

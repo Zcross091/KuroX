@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:screenshot/screenshot.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'package:collection/collection.dart';
 import 'package:shonenx/core/network/http_client.dart';
@@ -955,6 +956,28 @@ class PlayerController extends Notifier<PlayerState> {
       activeServer: state.activeServer,
       sourceInfo: _source?.sourceInfo,
     );
+  }
+
+  void onAppBackgrounded() {
+    if (_isDisposed) return;
+    try {
+      final engine = ref.read(videoEngineProvider);
+      engine.pause();
+    } catch (_) {}
+    WakelockPlus.disable();
+    unawaited(_progressTracker.flushProgress(skipCapture: true));
+  }
+
+  void onAppForegrounded() {
+    if (_isDisposed) return;
+    try {
+      final isPlaying = ref.read(videoEngineStateProvider).isPlaying;
+      if (isPlaying) {
+        WakelockPlus.enable();
+      } else {
+        WakelockPlus.disable();
+      }
+    } catch (_) {}
   }
 
   void _updateDiscordRpc() {

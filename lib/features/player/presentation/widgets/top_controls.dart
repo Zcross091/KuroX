@@ -39,14 +39,14 @@ class TopControls extends ConsumerWidget {
     final actionButtons = [
       if (mode is PlayerModeOnline && playerState.qualities.length > 1) ...[
         _buildQualityButton(
-          qualityText: playerState.activeQuality?.quality ?? 'Auto',
+          qualityText: playerState.activeQuality?.resolution ?? 'Auto',
           onTap: () {
             AppBottomSheet.showSelector<VideoStream>(
               context: context,
               title: 'Select Quality',
               items: playerState.qualities,
               selectedValue: playerState.activeQuality,
-              itemLabel: (s) => s.quality,
+              itemLabel: (s) => s.displayQuality,
               onChanged: (v) {
                 controller.changeQuality(v);
               },

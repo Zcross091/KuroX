@@ -330,9 +330,7 @@ class _DownloadSheetState extends ConsumerState<DownloadSheet> {
     return Column(
       children: streams.map((stream) {
         final size = _streamSizes[stream.url] ?? stream.size;
-        final labelText = (size != null && size.isNotEmpty)
-            ? '${stream.quality} ($size)'
-            : stream.quality;
+        final labelText = stream.displayTitleWithSize(size);
 
         return _StreamRowItem(
           stream: stream,
@@ -773,9 +771,7 @@ class _ServerTile extends StatelessWidget {
     return Column(
       children: streams!.map((stream) {
         final size = streamSizes[stream.url] ?? stream.size;
-        final labelText = (size != null && size.isNotEmpty)
-            ? '${stream.quality} ($size)'
-            : stream.quality;
+        final labelText = stream.displayTitleWithSize(size);
 
         return _StreamRowItem(
           stream: stream,
