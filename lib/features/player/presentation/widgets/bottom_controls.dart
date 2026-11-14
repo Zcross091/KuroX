@@ -18,6 +18,10 @@ import 'package:shonenx/features/player/providers/aniskip_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/aniskip_provider.dart';
 import 'package:shonenx/features/player/providers/player_controller.dart';
 import 'package:shonenx/features/settings/presentation/widgets/subtitle_settings_sheet.dart';
+import 'package:shonenx/features/settings/presentation/widgets/subtitle_translation_settings_sheet.dart';
+import 'package:shonenx/features/player/presentation/widgets/subtitle_translation_control_card.dart';
+import 'package:shonenx/features/player/providers/subtitle_translation_prefs_provider.dart';
+import 'package:shonenx/features/player/providers/subtitle_translation_provider.dart';
 import 'package:shonenx/shared/models/video_server.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
@@ -404,77 +408,42 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
 
         // Subtitle picker
         if (widget.playerState.subtitles.isNotEmpty)
-          _buildBottomSheetTrigger(
-            context: context,
-            value: widget.playerState.activeSubtitle,
-            items: widget.playerState.subtitles,
-            itemLabel: (s) => s.language,
-            onChanged: (v) {
-              widget.controller.changeSubtitle(v);
-            },
-            onLongPress: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                constraints: const BoxConstraints(maxWidth: double.infinity),
-                builder: (context) {
-                  return const SubtitleSettingsSheet();
-                },
-              );
-            },
-            actions: [
-              IconButton.filledTonal(
-                tooltip: 'Add Subtitle File',
-                style: IconButton.styleFrom(
-                  backgroundColor: widget.theme.colorScheme.secondaryContainer,
-                  foregroundColor: widget.theme.colorScheme.onSecondaryContainer,
-                ),
-                icon: const Icon(Icons.file_open_rounded, size: 18),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  widget.controller.pickExternalSubtitle();
-                },
-              ),
-              IconButton.filledTonal(
-                tooltip: 'Customize Subtitles',
-                style: IconButton.styleFrom(
-                  backgroundColor: widget.theme.colorScheme.primary,
-                  foregroundColor: widget.theme.colorScheme.onPrimary,
-                ),
-                icon: const Icon(Icons.tune_rounded, size: 18),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    constraints: const BoxConstraints(
-                      maxWidth: double.infinity,
-                    ),
-                    builder: (context) => const SubtitleSettingsSheet(),
-                  );
-                },
-              ),
-            ],
-            isDisabled: widget.playerState.subtitles.isEmpty,
-            withBadge: false,
-            displayText: 'Subtitles',
-            displayWidget: Badge(
-              label: Text((widget.playerState.subtitles.length - 1).toString()),
-              isLabelVisible: widget.playerState.subtitles.isNotEmpty,
-              backgroundColor: widget.theme.colorScheme.primary,
-              textColor: widget.theme.colorScheme.onPrimary,
-              child:
-                  widget.playerState.subtitles.isEmpty ||
-                      widget.playerState.activeSubtitle == null
-                  ? Icon(
-                      Icons.subtitles_off_outlined,
-                      color: widget.playerState.subtitles.isEmpty
-                          ? Colors.white54
-                          : Colors.white,
+          Badge(
+            label: Text((widget.playerState.subtitles.length - 1).toString()),
+            isLabelVisible: widget.playerState.subtitles.length > 1,
+            backgroundColor: widget.theme.colorScheme.primary,
+            textColor: widget.theme.colorScheme.onPrimary,
+            child: InkWell(
+              onTap: () => _showSubtitleSelector(context),
+              onLongPress: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  constraints: const BoxConstraints(maxWidth: double.infinity),
+                  builder: (context) => const SubtitleSettingsSheet(),
+                );
+              },
+              borderRadius: BorderRadius.circular(6),
+              child: widget.playerState.subtitles.isEmpty ||
+                      widget.playerState.activeSubtitle == null ||
+                      widget.playerState.activeSubtitle == SubtitleTrack.none
+                  ? const Padding(
+                      padding: EdgeInsets.all(4.0),
+                      child: Icon(
+                        Icons.subtitles_off_outlined,
+                        color: Colors.white,
+                        size: 22,
+                      ),
                     )
-                  : const Icon(Icons.subtitles_outlined),
+                  : const Padding(
+                      padding: EdgeInsets.all(4.0),
+                      child: Icon(
+                        Icons.subtitles_outlined,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
             ),
           ),
 
@@ -711,6 +680,230 @@ class _BottomControlsState extends ConsumerState<BottomControls> {
             : Colors.white.withValues(alpha: 0.12),
         theme: widget.theme,
       ),
+    );
+  }
+
+  void _showSubtitleSelector(BuildContext context) {
+    final theme = Theme.of(context);
+    final activeSub = widget.playerState.activeSubtitle;
+
+    final offOption = widget.playerState.subtitles.firstWhere(
+      (s) => s.url.isEmpty,
+      orElse: () => SubtitleTrack.none,
+    );
+
+    final groups = <String, List<SubtitleTrack>>{};
+    for (final sub in widget.playerState.subtitles) {
+      if (sub.url.isEmpty) continue;
+      groups.putIfAbsent(sub.language, () => []).add(sub);
+    }
+
+    AppBottomSheet.show(
+      context: context,
+      title: 'Subtitles',
+      actions: [
+        IconButton.filledTonal(
+          tooltip: 'Add Subtitle File',
+          style: IconButton.styleFrom(
+            backgroundColor: widget.theme.colorScheme.secondaryContainer,
+            foregroundColor: widget.theme.colorScheme.onSecondaryContainer,
+          ),
+          icon: const Icon(Icons.file_open_rounded, size: 18),
+          onPressed: () {
+            Navigator.of(context).pop();
+            widget.controller.pickExternalSubtitle();
+          },
+        ),
+        IconButton.filledTonal(
+          tooltip: 'Customize Subtitles',
+          style: IconButton.styleFrom(
+            backgroundColor: widget.theme.colorScheme.primary,
+            foregroundColor: widget.theme.colorScheme.onPrimary,
+          ),
+          icon: const Icon(Icons.tune_rounded, size: 18),
+          onPressed: () {
+            Navigator.of(context).pop();
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              constraints: const BoxConstraints(maxWidth: double.infinity),
+              builder: (context) => const SubtitleSettingsSheet(),
+            );
+          },
+        ),
+      ],
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Consumer(
+              builder: (context, ref, _) {
+                final translationState = ref.watch(
+                  runtimeSubtitleTranslationProvider,
+                );
+                final translationConfig = ref.watch(
+                  subtitleTranslationPrefsProvider,
+                );
+                final hasActiveSub =
+                    activeSub != null &&
+                    activeSub != SubtitleTrack.none &&
+                    activeSub.url.isNotEmpty;
+
+                return SubtitleTranslationControlCard(
+                  translationState: translationState,
+                  translationConfig: translationConfig,
+                  hasActiveSub: hasActiveSub,
+                  onSelectTargetLanguage: (lang) {
+                    ref
+                        .read(runtimeSubtitleTranslationProvider.notifier)
+                        .translateCurrentSubtitles(targetLang: lang);
+                  },
+                  onDisableTranslation: () {
+                    ref
+                        .read(runtimeSubtitleTranslationProvider.notifier)
+                        .disableTranslation();
+                  },
+                  onOpenSettings: () {
+                    Navigator.of(context).pop();
+                    SubtitleTranslationSettingsSheet.show(context);
+                  },
+                );
+              },
+            ),
+            _buildSubtitleTile(offOption, activeSub == offOption),
+            const SizedBox(height: 8),
+            for (final entry in groups.entries)
+              if (entry.value.length == 1)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: _buildSubtitleTile(
+                    entry.value.first,
+                    activeSub == entry.value.first,
+                    title: entry.key,
+                    subtitle: entry.value.first.label,
+                  ),
+                )
+              else
+                Theme(
+                  data: Theme.of(
+                    context,
+                  ).copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    initiallyExpanded: entry.value.any(
+                      (sub) => activeSub == sub,
+                    ),
+                    title: Text(
+                      entry.key,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: entry.value.any((sub) => activeSub == sub)
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    childrenPadding: const EdgeInsets.only(left: 12),
+                    children: [
+                      for (int i = 0; i < entry.value.length; i++)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: _buildSubtitleTile(
+                            entry.value[i],
+                            activeSub == entry.value[i],
+                            title: _resolveSubtitleItemTitle(
+                              entry.value[i],
+                              i,
+                              entry.value,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _resolveSubtitleItemTitle(
+    SubtitleTrack sub,
+    int index,
+    List<SubtitleTrack> group,
+  ) {
+    final label = sub.label?.trim();
+    if (label != null &&
+        label.isNotEmpty &&
+        label.toLowerCase() != 'auto' &&
+        label.toLowerCase() != 'default') {
+      final duplicateCount = group
+          .where((s) => s.label?.trim() == label)
+          .length;
+      if (duplicateCount > 1) {
+        return '$label (${index + 1})';
+      }
+      return label;
+    }
+    return 'Track ${index + 1}';
+  }
+
+  Widget _buildSubtitleTile(
+    SubtitleTrack item,
+    bool isSelected, {
+    String? title,
+    String? subtitle,
+  }) {
+    final theme = Theme.of(context);
+    final cleanSubtitle =
+        (subtitle != null &&
+            subtitle.trim().isNotEmpty &&
+            subtitle.trim().toLowerCase() != 'auto' &&
+            subtitle.trim().toLowerCase() != 'default' &&
+            (title == null ||
+                subtitle.trim().toLowerCase() != title.trim().toLowerCase()))
+        ? subtitle.trim()
+        : null;
+
+    return ListTile(
+      selected: isSelected,
+      selectedTileColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      leading: isSelected
+          ? Icon(
+              Icons.radio_button_checked_rounded,
+              color: theme.colorScheme.primary,
+            )
+          : Icon(
+              Icons.radio_button_unchecked_rounded,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+      title: Text(
+        title ?? item.language,
+        style: TextStyle(
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          color: isSelected
+              ? theme.colorScheme.primary
+              : theme.colorScheme.onSurface,
+        ),
+      ),
+      subtitle: cleanSubtitle != null
+          ? Text(
+              cleanSubtitle,
+              style: TextStyle(
+                fontSize: 12,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            )
+          : null,
+      trailing: isSelected
+          ? Icon(Icons.check_rounded, color: theme.colorScheme.primary)
+          : null,
+      onTap: () {
+        widget.controller.changeSubtitle(item);
+        Navigator.of(context).pop();
+      },
     );
   }
 

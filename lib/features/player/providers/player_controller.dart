@@ -22,6 +22,8 @@ import 'package:shonenx/features/player/providers/player_prefs_provider.dart';
 import 'package:shonenx/features/player/providers/progress_tracker.dart';
 import 'package:shonenx/features/player/providers/selection_resolver.dart';
 import 'package:shonenx/features/player/providers/subtitle_prefs_provider.dart';
+import 'package:shonenx/features/player/providers/subtitle_translation_prefs_provider.dart';
+import 'package:shonenx/features/player/providers/subtitle_translation_provider.dart';
 import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 import 'package:shonenx/features/player/utils/screenshot_helper.dart';
 import 'package:shonenx/shared/models/unified_episode.dart';
@@ -457,6 +459,7 @@ class PlayerController extends Notifier<PlayerState> {
       _alreadyAutoSkipped.clear();
       _progressTracker.resetThumbnail();
       ref.read(videoEngineProvider).pause();
+      ref.read(runtimeSubtitleTranslationProvider.notifier).resetForNewStream();
     }
 
     state = state.copyWith(
@@ -521,6 +524,10 @@ class PlayerController extends Notifier<PlayerState> {
         activeSubtitle: activeSubtitle,
         isLoading: false,
       );
+
+      if (activeSubtitle != SubtitleTrack.none) {
+        _checkAndTriggerAutoTranslation(activeSubtitle, subtitles);
+      }
 
       // If startPosition wasn't provided (e.g. episode switch inside player), check saved watch history
       Duration? effectiveStartPosition = startPosition;
@@ -798,9 +805,13 @@ class PlayerController extends Notifier<PlayerState> {
       ref
           .read(playerPrefsProvider.notifier)
           .setDefaultSubtitleLang(newSubtitle.language);
+      ref.read(runtimeSubtitleTranslationProvider.notifier).resetForNewStream();
     } else if (newSubtitle != null) {
       _resolver.preferredSubtitleLang = 'Off';
       ref.read(playerPrefsProvider.notifier).setDefaultSubtitleLang('Off');
+      ref
+          .read(runtimeSubtitleTranslationProvider.notifier)
+          .disableTranslation();
     }
 
     state = state.copyWith(activeSubtitle: newSubtitle, error: null);
@@ -827,14 +838,54 @@ class PlayerController extends Notifier<PlayerState> {
   // Set native subtitle track (or clear it if using custom Flutter overlay)
   Future<void> _applyNativeSubtitle(SubtitleTrack? subtitle) async {
     final useCustom = ref.read(subtitlePrefsProvider).useCustomSubtitle;
+    final isInternal = subtitle != null && subtitle.url.startsWith('internal:');
     try {
-      if (useCustom || subtitle?.url.isEmpty == true) {
+      if ((useCustom && !isInternal) || subtitle == null || subtitle.url.isEmpty) {
         await ref.read(videoEngineProvider).setSubtitle(null);
       } else {
         await ref.read(videoEngineProvider).setSubtitle(subtitle);
       }
     } catch (e) {
       state = state.copyWith(error: 'Failed to switch subtitle: $e');
+    }
+  }
+
+  void _checkAndTriggerAutoTranslation(
+    SubtitleTrack activeSub,
+    List<SubtitleTrack> availableSubs,
+  ) {
+    final translationConfig = ref.read(subtitleTranslationPrefsProvider);
+    if (!translationConfig.enabled ||
+        !translationConfig.autoTranslateIfPreferredMissing) {
+      return;
+    }
+
+    final preferred = _resolver.preferredSubtitleLang;
+    if (preferred == null ||
+        preferred == 'Off' ||
+        preferred.toLowerCase() == 'none') {
+      return;
+    }
+
+    // Check if any available stream track already matches preferred language
+    final hasPreferred = availableSubs.any(
+      (s) =>
+          s.url.isNotEmpty && _resolver.matchesLanguage(s.language, preferred),
+    );
+
+    if (!hasPreferred && activeSub.url.isNotEmpty) {
+      final targetLang =
+          translationConfig.defaultTargetLanguage.isNotEmpty
+              ? translationConfig.defaultTargetLanguage
+              : preferred;
+
+      if (!_resolver.matchesLanguage(activeSub.language, targetLang)) {
+        unawaited(
+          ref
+              .read(runtimeSubtitleTranslationProvider.notifier)
+              .translateCurrentSubtitles(targetLang: targetLang),
+        );
+      }
     }
   }
 

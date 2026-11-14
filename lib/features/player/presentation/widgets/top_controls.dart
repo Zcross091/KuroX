@@ -7,6 +7,7 @@ import 'package:shonenx/features/player/providers/player_controller.dart';
 import 'package:shonenx/features/player/providers/video_engine_provider.dart';
 import 'package:shonenx/features/player/domain/player_mode.dart';
 import 'package:shonenx/features/settings/presentation/widgets/subtitle_settings_sheet.dart';
+import 'package:shonenx/features/settings/presentation/widgets/subtitle_translation_settings_sheet.dart';
 import 'package:shonenx/shared/widgets/app_bottom_sheet.dart';
 import 'package:shonenx/shared/models/video_stream.dart';
 import 'package:shonenx/features/player/syncplay/presentation/syncplay_sheet.dart';
@@ -298,6 +299,32 @@ class TopControls extends ConsumerWidget {
                 constraints: const BoxConstraints(maxWidth: double.infinity),
                 builder: (context) => const SubtitleSettingsSheet(),
               );
+            },
+          ),
+          const SizedBox(height: 4),
+          ListTile(
+            leading: Icon(
+              Icons.translate_rounded,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            title: const Text(
+              'Subtitle Translation',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              'AI & Cloud engines, multi-provider fallback & offline caching',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 12,
+              ),
+            ),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            onTap: () {
+              Navigator.of(context).pop();
+              SubtitleTranslationSettingsSheet.show(context);
             },
           ),
           const SizedBox(height: 4),
